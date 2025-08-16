@@ -43,7 +43,7 @@ jobs:
       - name: Install Node.js dependencies
         run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
       - name: Check Hugo version
-        run: hugo version
+        crun: hugo version
       - name: Build with Hugo
         env:
           HUGO_CACHEDIR: ${{ runner.temp }}/hugo_cache
@@ -56,6 +56,8 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./public
+      - name: List public dir
+        run: ls -R ./public
 
   # Deployment job
   deploy:
