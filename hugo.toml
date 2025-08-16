@@ -1,4 +1,4 @@
-baseURL = 'https://mateenbagheri.github.io/'
+baseURL = '' 
 languageCode = 'en-us'
 title = 'mateenbagheri'
 theme = 'maverick'
