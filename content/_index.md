@@ -15,3 +15,5 @@ I am also a member of [Abramad](https://www.abramad.com/) team, an Iranian cloud
 
 I love meeting new people. If you'd like to grab a coffee or chat,  
 feel free to send an email to `mateenbagheridev` at Gmail and we can set something up. 🙂
+
+**Note:** I avoid using generative AI to write my blogposts. I believe generative AIs can be good in certain fields and aspects of our life and can help us be more productive. Yet, using gen AI for writing blogposts beats the whole purpose in my humble opinion. I love the internet I grew up with. A place where humans connect and interact with each other.

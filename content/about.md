@@ -12,6 +12,8 @@ Right now, I’m part of the **Abramad team** at [System Group](https://www.syst
 
 When I’m not working, I like to tinker on side projects. My favorite one is **[Memorabilia](https://github.com/mateenbagheri/memorabilia)**, an in-memory storage project I’ve been slowly shaping into a key–value database. It’s my little playground for experimenting with concurrency, performance tuning, and design ideas.
 
+**Note:** I avoid using generative AI to write my blogposts. I believe generative AIs can be good in certain fields and aspects of our life and can help us be more productive. Yet, using gen AI for writing blogposts beats the whole purpose in my humble opinion. I love the internet I grew up with. A place where humans connect and interact with each other.
+
 ---
 ## Let’s Connect
 I’d love to hear from you — whether it’s about tech, projects, or just grabbing a coffee:  
