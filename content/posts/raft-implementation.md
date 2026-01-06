@@ -1,7 +1,8 @@
 +++
-date = '2026-01-02T17:43:00+03:30'
+date = '2025-12-30T17:43:00+03:30'
 draft = true
 title = 'My experience implementing a Raft consensus algorithm through Hashicorp Raft library'
+tags = ['Raft', 'Distributed Systems', 'Hashicorp']
 +++
 The past few months have been challenging to say the least. During tough times, I find it hard to pour time into my personal projects. However, I started pushing through last month and decided to go back to working on my personal project, [Memorabilia](https://github.com/mateenbagheri/memorabilia). Although it’s a bare minimum project at the moment, it is living rent-free on my mind.
 
@@ -39,30 +40,30 @@ And some major pros that cannot be ignored for some use cases:
 - It is simpler to deploy.
 - Enables real-time use cases.
 
-There is no good or bad in this comparison between a synchronous and asynchronous approach. Just like everything in our field, tradeoffs. There are some projects like [TiKV](https://tikv.org/) going the consensus route to address different requirements for different projects, and I think that's what I am willing to go for Memorabilia.
+There is no good or bad in this comparison between a synchronous and asynchronous approach. Just like everything in our field, there are tradeoffs. There are some projects like [TiKV](https://tikv.org/) going the consensus route to address different requirements for different projects, and I think that's what I am willing to go for with Memorabilia.
 
 ## There is no single interface implementation for Raft
 At first, I decided to start small and build a really minimal application that uses Raft as its consensus to do three basic operations on a map: Set, Get, and Delete.
 
-When looking around, I came across [many libraries](https://raft.github.io/#implementations), two of which had my attention, one by [etcd](https://github.com/etcd-io/raft) and the other [Hashicorp](https://github.com/hashicorp/raft). The first thing I noticed was that they differ vastly in the interface implementation they offer. 
+When looking around, I came across [many libraries](https://raft.github.io/#implementations), two of which had my attention, one by [etcd](https://github.com/etcd-io/raft) and the other by [Hashicorp](https://github.com/hashicorp/raft). The first thing I noticed was that they differ vastly in the interface implementation they offer. 
 
 - Hashicorp offers a way more high-level interface design and lets you focus on designing your state machine. On the other hand, etcd's implementation is way more low-level and thus, it will be harder to implement. This is just a guess, but I believe the reason for this is due to Raft being a core algorithm in etcd that everything is built around it rather than a tool. I am not suggesting that a project like [Vault](https://www.hashicorp.com/en/products/vault) isn't massively benefiting from a consensus algorithm, but I believe the implementation is not built around it, and having a fine-grained control over the algorithm, even if it’s a plus, is not a priority.
-- Hashicorp’s raft implementation comes with a built-in integrated log store named [Raft BoltDB](https://github.com/hashicorp/raft-boltdb). This is while [etcd] has its own custom WAL(https://dev.to/justlorain/understanding-etcds-raft-implementation-a-deep-dive-into-raft-log-bdn) (which stands for Write Ahead Log). You can read more about it [here](https://developer.hashicorp.com/vault/docs/internals/integrated-storage). Since the log is the main source of truth, their different approach to it is a big deal. Here we see again that Hashicorp decided to opt for simplicity rather than fine-grained control over how things are done.
+- Hashicorp’s raft implementation comes with a built-in integrated log store named [Raft BoltDB](https://github.com/hashicorp/raft-boltdb). This is while [etcd] has its own custom WAL (https://dev.to/justlorain/understanding-etcds-raft-implementation-a-deep-dive-into-raft-log-bdn) (which stands for Write Ahead Log). You can read more about it [here](https://developer.hashicorp.com/vault/docs/internals/integrated-storage). Since the log is the main source of truth, their different approach to it is a big deal. Here we see again that Hashicorp decided to opt for simplicity rather than fine-grained control over how things are done.
 - Hashicorp offers a way more high-level interface design and lets you focus on designing your state machine. On the other hand, etcd's implementation is way more low-level and thus, it will be harder to implement. This is just a guess, but I believe the reason for this is due to Raft being a core algorithm in etcd that everything is built around it rather than a tool. I am not suggesting that a project like [Vault](https://www.hashicorp.com/en/products/vault) isn't massively benefiting from a consensus algorithm, but I believe the implementation is not built around it, and having a fine-grained control over the algorithm, even if it’s a plus, is not a priority.
-- How networking is managed in etcd's library is your responsibility. However, in Hashicorp's implementation this is abstracted (as I will explain further in the implementation section). You will implement a `Transport` interface.
+- How networking is managed in etcd's library is your responsibility. However, in Hashicorp's implementation, this is abstracted (as I will explain further in the implementation section). You will implement a `Transport` interface.
 
-I, as someone who had close to no experience with a distributed environment, chose to start with the Hashicorp’s library because it was simpler to learn and get my hands on. I could focus on learning the core concepts and worry less about the fine-grained implementations. And that’s what I did. Eventually, I might also try to do an etcd implementation. The minimal pure implementation is more preferred for a custom system like mine. 
+I, as someone who had close to no experience with a distributed environment, chose to start with Hashicorp’s library because it was simpler to learn and get my hands on. I could focus on learning the core concepts and worry less about the fine-grained implementations. And that’s what I did. Eventually, I might also try to do an etcd implementation. The minimal pure implementation is more preferred for a custom system like mine. 
 
 ### Implementation
 Note that from now onwards, we are only discussing the Hashicorp Raft library. As mentioned before, the implementations and interface design between any two libraries may vary. 
 
-I also will not dig too deep into implementation. There are many greeat implementations that have done this better than me. However, what I struggled while trying to do my implementation was understanding the reasoning behind this interface design and how all of its component contribute to a greater picture.
+I also will not dig too deep into implementation. There are many great implementations that have done this better than me. However, what I struggled while trying to do my implementation was understanding the reasoning behind this interface design and how all of its components contribute to a greater picture.
 
 Here is `NewRaft` function with its documentation:
 ```
 // NewRaft is used to construct a new Raft node. It takes a configuration, as well
 // as implementations of various interfaces that are required. If we have any
-// old state, such as snapshots, logs, peers, etc, all those will be restored
+// old state, such as snapshots, logs, peers, etc., all those will be restored
 // when creating the Raft node.
 func NewRaft(
     conf *Config, 
@@ -73,18 +74,25 @@ func NewRaft(
     trans Transport,
 ) (*Raft, error)
 ```
-I know it can feel overwhelming at first. Having to implement 5 interfaces seems to be daunting. But worry not! Based on your needs you might not have to implement every single one of the ones mentioned above. For example, as mentioned in article, you can use `raftboltdb` instace as LogStore, you could use `NewTCPTransport` provided by the package or for config, you might want to opt for `raft.DefaultConfig()` untill you want to tinker around or have specefic needs. Regardless, knowing what each of them does, won't hurt. If anything, once you understand what problem each interface is responsible for, the design starts to make sense
+I know it can feel overwhelming at first. Having to implement 5 interfaces seems daunting. But worry not! Based on your needs, you might not have to implement every single one of the ones mentioned above. For example, as mentioned in the article, you can use `raftboltdb` instance as LogStore and StableStore; You also could use `NewTCPTransport` provided by the package, or for config, you might want to opt for `raft.DefaultConfig()` until you want to tinker around or have specific needs. Regardless, knowing what each of them does won't hurt. If anything, once you understand what problem each interface is responsible for, the design starts to make sense.
 
-In order to make an instance work, you need to implement 4 main interfaces
+In order to make an instance work, you need to implement 4 main interfaces:
 ## FSM interface 
-This interface is, basically, the heart of your application logic and domain. You find yourself tinkering a lot with this interface's implementation. Raft does not know or care particularly what your application is doing. It only cares about making sure that each command is ordered, replicated and commited consistently for every node. Raft ensures that the `Apply()` is called in the same order on each node.
+FSM stands for [Finite State Machine](https://en.wikipedia.org/wiki/Finite-state_machine). I will quote [Hashicorp's article](https://developer.hashicorp.com/nomad/docs/architecture/cluster/consensus) on what this is intended to be:
+> An FSM is a collection of finite states with transitions between them. As new logs are applied, the FSM is allowed to transition between states. Application of the same sequence of logs must result in the same state, meaning behavior must be deterministic.
 
+This interface is, basically, the heart of your application logic and domain. You find yourself tinkering a lot with this interface's implementation. Raft does not know or care particularly what your application is doing. It only cares about making sure that each command is ordered, replicated, and committed consistently for every node. Raft ensures that the `Apply()` is called in the same order on each node.
 ## LogStore interface
-Consists of a lot of functions but eventually its goal is to dictate how our Raft log is stored.
-
+Consists of a lot of functions, but eventually, its goal is to dictate how our Raft log is stored. Machine state can be rebuilt from repeating raft logs in order. For most use cases, the `raftboltdb` provided by Hashicorp will do the job. Unless someone specifically needs a WAL implementation for a specific need, there is no need to implement this interface. Hashicorp itself uses the `raftboltdb` for its own projects, which shows it is stable and reliable.
 ## StableStore interface
+`StableStore`, unlike `LogStore`, dictates how Raft's metadata is going to be stored. This has nothing to do with your application data. Information regarding leader election is included. This data is crucial to the application and its safety in case of unexpected system behaviour is needed. Hashicorp keeps this interface minimal and also provides us with a boltdb backend implementation to use.
 ## Transport interface 
-How two nodes communicate with each other is dictated by this interface.
+How two nodes communicate with each other is dictated by this interface. This is where networking comes into play. I will avoid further diving into this interface since all I want to say is that [this article](https://deepwiki.com/hashicorp/raft/4.1-transport-interfaces) does better.
 ## SnapshotStore interface
-How saving and loading snapshots from/to disk is managed.
+This interface does exactly what its name suggests it does. Snapshots, like Finite State Machines, are not terms and concepts reserved for the Raft algorithm. Based on the wiki
+> In computer systems, a snapshot is the state of a system at a particular point in time.
+
+Why do we need snapshots in this algorithm? Not having a snapshot hand:ling method will work at first, but consider what happens in a long-running application where logs are getting appended rapidly. I myself thought at first that snapshots must be optional. But when you think about it, most modern applications will get hurt by not implementing it in the long term. Snapshotting is a simple way to handle an ever-growing log backlog. I will quote section 7 in the raft paper:
+> Raft’s log grows during normal operation to incorporate more client requests, but in a practical system, it cannot grow without bound. As the log grows longer, it occupies more space and takes more time to replay. This will eventually cause availability problems without some mechanism to discard obsolete information that has accumulated in the log. Snapshotting is the simplest approach to compaction. In snapshotting, the entire current system state is written to a snapshot on stable storage, then the entire log up to that point is discarded.
+## The greater picture
 
